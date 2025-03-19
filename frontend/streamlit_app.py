@@ -30,8 +30,13 @@ from frontend.utils.message_editing import MessageEditing
 from frontend.utils.multimodal_utils import format_content, get_parts_from_files
 from frontend.utils.stream_handler import Client, StreamHandler, get_chain_response
 
+import hashlib
+import os
+
 USER = "my_user"
 EMPTY_CHAT_NAME = "Empty chat"
+
+USER_DB_FILE = os.path.join(os.getcwd(), 'user_db', 'db.json')
 
 
 def setup_page() -> None:
@@ -44,6 +49,64 @@ def setup_page() -> None:
     )
     st.title("Playground")
     st.markdown(MARKDOWN_STR, unsafe_allow_html=True)
+
+
+
+def load_user_db():
+    """Carica il database degli utenti da un file JSON."""
+    if os.path.exists(USER_DB_FILE):
+        with open(USER_DB_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+# Funzione per creare l'hash della password
+def hash_password(password: str) -> str:
+    """Restituisce l'hash della password usando sha256."""
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+# Funzione per verificare username e password
+def verify_user(username: str, password: str):
+    """Verifica se l'username e la password corrispondono a quelli nel database."""
+    user_db = load_user_db()
+
+
+
+    if username in user_db:
+        stored_password_hash = user_db[username]['password']
+        password_hash = hash_password(password)
+ 
+        if password_hash == stored_password_hash:
+            # Restituisce anche il tipo di utente
+            return user_db[username]['user_type']
+
+    return None  # Restituisce None se l'utente non è trovato o la password non è corretta
+
+# Funzione di login
+def login_form() -> bool:
+    """Mostra il modulo di login e autentica l'utente."""
+
+    if "authenticated" in st.session_state and st.session_state["authenticated"]:
+        return True  
+
+    st.subheader("Login")
+    username = st.text_input("Username", "")
+    password = st.text_input("Password", type="password")
+    login_button = st.button("Login")
+
+    if login_button:
+        # Controlla se l'utente e la password sono corretti nel database
+        user_type = verify_user(username, password)
+        if user_type:
+            st.session_state["authenticated"] = True
+            st.success("Login successful!")
+            st.session_state["user_type"] = user_type  # Salva il tipo di utente nella sessione
+            return True
+        else:
+            st.error("Incorrect username or password. Please try again.")
+    
+    return False
+
+
 
 
 def initialize_session_state() -> None:
@@ -168,7 +231,7 @@ def handle_user_input(side_bar: SideBar) -> None:
             gcs_uris=side_bar.gcs_uris,
         )
         st.session_state["gcs_uris_to_be_sent"] = ""
-        parts.append({"type": "text", "text": prompt})
+        parts.append({"type": "text", "text": prompt, "user_type": st.session_state["user_type"]})
         st.session_state.user_chats[st.session_state["session_id"]]["messages"].append(
             HumanMessage(content=parts).model_dump()
         )
@@ -252,7 +315,14 @@ def display_feedback(side_bar: SideBar) -> None:
 
 def main() -> None:
     """Main function to set up and run the Streamlit app."""
+
     setup_page()
+
+    # Check if the user is authenticated
+    if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+        if not login_form():
+            st.stop() 
+
     initialize_session_state()
     side_bar = SideBar(st=st)
     side_bar.init_side_bar()

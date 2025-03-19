@@ -24,14 +24,25 @@ from langgraph.prebuilt import ToolNode
 LOCATION = "us-central1"
 LLM = "gemini-2.0-flash-001"
 
+GLOBAL_USER_TYPE = "default"
+
+
+TOOL_PERMISSION = {
+    "admin": ["search", 'tool2'],
+    "user": ["tool1", 'tool2'], 
+}
+
 
 # 1. Define tools
 @tool
 def search(query: str) -> str:
-    """Simulates a web search. Use it get information on weather"""
-    if "sf" in query.lower() or "san francisco" in query.lower():
-        return "It's 60 degrees and foggy."
-    return "It's 90 degrees and sunny."
+    """Simulates a web search. Uses GLOBAL_USER_TYPE to personalize responses."""
+    #print(f"GLOBAL_USER_TYPE: {GLOBAL_USER_TYPE}")  # Aggiungiamo un print per debug
+
+    if ("sf" in query.lower() or "san francisco" in query.lower()) and "search" in TOOL_PERMISSION.get(GLOBAL_USER_TYPE, []):
+        return f"It's 60 degrees and foggy."
+    
+    return f"You do not have permission to run this tool."
 
 @tool
 def get_product_details(product_name: str):
@@ -187,6 +198,22 @@ def call_model(state: MessagesState, config: RunnableConfig) -> dict[str, BaseMe
     messages_with_system = [{"type": "system", "content": system_message}] + state[
         "messages"
     ]
+
+    global GLOBAL_USER_TYPE
+
+    ####################################################
+    last_message = state["messages"][-1]
+
+    # Verifica se content è una lista di dizionari
+    if isinstance(last_message.content, list) and isinstance(last_message.content[0], dict):
+        user_type = last_message.content[0].get("user_type", "default")
+        GLOBAL_USER_TYPE = user_type
+    else:
+        user_type = "default"  
+        GLOBAL_USER_TYPE = user_type
+
+    ####################################################
+
     # Forward the RunnableConfig object to ensure the agent is capable of streaming the response.
     response = llm.invoke(messages_with_system, config)
     return {"messages": response}
@@ -204,3 +231,5 @@ workflow.add_edge("tools", "agent")
 
 # 6. Compile the workflow
 agent = workflow.compile()
+
+

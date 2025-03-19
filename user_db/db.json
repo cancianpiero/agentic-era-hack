@@ -1,0 +1,10 @@
+{
+    "horsa1": {
+        "password": "9cdee5050fb57181e54646f487753dde73bc8e8c73843de92d01427420c64c23",
+        "user_type": "admin"
+    },
+    "horsa2": {
+        "password": "df21b1245419763295b2d582072ada296c09b458227f6176d36634c88c179a91",
+        "user_type": "user"
+    }
+}

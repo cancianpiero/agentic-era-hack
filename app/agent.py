@@ -28,9 +28,10 @@ GLOBAL_USER_TYPE = "default"
 
 
 TOOL_PERMISSION = {
-    "admin": ["search", 'tool2'],
-    "user": ["tool1", 'tool2'], 
+    "admin": ["extract_product_info", 'find_similar_products'],
+    "user": ["extract_product_info"],
 }
+ 
 
 
 # 1. Define tools
@@ -108,7 +109,7 @@ def extract_product_info(state: Annotated[dict, InjectedState]) -> Dict[str, Any
     try:
 
         messages = [
-            SystemMessage(content="Extract product information including brand, model, specifications, and price. Return the information in JSON format including it inside the xml tag '<json_response>' and '</json_response>."),
+            SystemMessage(content="Extract product technical information contained inside the datasheet. Return the information in a verbose summary using markdown."),
             HumanMessage(content=[
                 {"type": "text", "text": "Please analyze this product datasheet and extract all relevant information."},
                 content_to_add]
@@ -118,21 +119,23 @@ def extract_product_info(state: Annotated[dict, InjectedState]) -> Dict[str, Any
         response = llm.invoke(messages)
         
         # Return the extracted information
-        return {"product_info": response.content, "messages": messages}
+        return {"product_info": response.content + "\n\n"}
         
     except Exception as e:
         return {"error": f"Error processing PDF: {str(e)}"}
 
 
 @tool    
-def find_similar_products(dict_info: Dict[str, Any]) -> str:
-    """Find similar products given a dictionary of information about a specific product.
+def find_similar_products(product_tech_info: str, config: Annotated[RunnableConfig, InjectedState]) -> str:
+    """Find similar products given a summary of technical details about a specific product.
     Use this tool after the call of extract_product_info tool to find similar products."""
     import requests
     import json
     import subprocess
 
-    # print(dict_info)
+    if "find_similar_products" not in TOOL_PERMISSION.get(GLOBAL_USER_TYPE, []):
+        return f"You do not have permissions to access the datasheet database."
+    
     # Ottieni il token di autenticazione
     token = subprocess.getoutput("gcloud auth print-access-token")
 
@@ -141,7 +144,11 @@ def find_similar_products(dict_info: Dict[str, Any]) -> str:
 
     # Corpo della richiesta
     payload = {
-        "query": "can you explain me how to Parallelize the Long-term Memory Training?",
+        "query": f"""Find the most three similar products with features that enable them to be used instead of the following product.
+        <product_info>
+        {product_tech_info}
+        </product_info>
+        """,
         "pageSize": 10,
         "queryExpansionSpec": {"condition": "AUTO"},
         "spellCorrectionSpec": {"mode": "AUTO"},
@@ -173,11 +180,30 @@ def find_similar_products(dict_info: Dict[str, Any]) -> str:
             text_answer += f"Page {answer.get('pageNumber')}: {answer.get('content')}" + "\n"
             answers.append(f"Page {answer.get('pageNumber')}: {answer.get('content')}")
         text_answer += "\n"
-    
-    return text_answer
+
+    system_message = """You will receive a summary of technical information about a specific product and a list of chunks retreived from the datasheets of similar products.
+    Identify the most similar products that could be used to substitute the target one.
+    Return those similar products and the reason why you consider them substitute.
+    """
+    input_prompt = f"""
+    <summary>
+    {product_tech_info}
+    </summary>
+    <chunks>
+    {text_answer}
+    </chunks>
+    """
+    messages_with_system = [{"type": "system", "content": system_message}, {"type": "human", "content": input_prompt}]
+
+    # Forward the RunnableConfig object to ensure the agent is capable of streaming the response.
+    response = llm.invoke(messages_with_system, config)
+
+    return response.content + "\n\n"
+
 
 
 tools = [extract_product_info, find_similar_products]
+
 
 # 2. Set up the language model
 llm = ChatVertexAI(

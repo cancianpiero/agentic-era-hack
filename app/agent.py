@@ -35,42 +35,6 @@ TOOL_PERMISSION = {
 
 
 # 1. Define tools
-@tool
-def search(query: str) -> str:
-    """Simulates a web search. Uses GLOBAL_USER_TYPE to personalize responses."""
-    #print(f"GLOBAL_USER_TYPE: {GLOBAL_USER_TYPE}")  # Aggiungiamo un print per debug
-
-    if ("sf" in query.lower() or "san francisco" in query.lower()) and "search" in TOOL_PERMISSION.get(GLOBAL_USER_TYPE, []):
-        return f"It's 60 degrees and foggy."
-    
-    return f"You do not have permission to run this tool."
-
-@tool
-def get_product_details(product_name: str):
-    """Gathers basic details about a product."""
-    details = {
-        "smartphone": "A cutting-edge smartphone with advanced camera features and lightning-fast processing.",
-        "usb charger": "A super fast and light usb charger",
-        "shoes": "High-performance running shoes designed for comfort, support, and speed.",
-        "headphones": "Wireless headphones with advanced noise cancellation technology for immersive audio.",
-        "speaker": "A voice-controlled smart speaker that plays music, sets alarms, and controls smart home devices.",
-    }
-    return details.get(product_name, "Product details not found.")
-
-
-@tool
-def get_product_price(product_name: str):
-    """Gathers price about a product."""
-    details = {
-        "smartphone": 500,
-        "usb charger": 10,
-        "shoes": 100,
-        "headphones": 50,
-        "speaker": 80,
-    }
-    return details.get(product_name, "Product price not found.")
-
-
 from typing import Dict, Any
 from typing_extensions import Annotated
 from langgraph.prebuilt import InjectedState

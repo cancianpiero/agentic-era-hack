@@ -155,7 +155,6 @@ def login_form() -> bool:
             st.session_state["authenticated"] = True
             st.success("Login successful!")
             st.session_state["user_type"] = user_type  # Salva il tipo di utente nella sessione
-            st.rerun() 
             return True
         else:
             st.error("Incorrect username or password. Please try again.")

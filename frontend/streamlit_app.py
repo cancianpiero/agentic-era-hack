@@ -38,19 +38,74 @@ EMPTY_CHAT_NAME = "Empty chat"
 
 USER_DB_FILE = os.path.join(os.getcwd(), 'user_db', 'db.json')
 
-
 def setup_page() -> None:
     """Configure the Streamlit page settings."""
     st.set_page_config(
-        page_title="Playground",
+        page_title="Component Compass",
         layout="wide",
         initial_sidebar_state="auto",
         menu_items=None,
     )
-    st.title("Playground")
-    st.markdown(MARKDOWN_STR, unsafe_allow_html=True)
 
+    # Crea un contenitore per il titolo e la descrizione
+    header = st.container()
+    header.title("Component Compass")
+    header.markdown(
+        """
+        <p style='font-size: 18px; color: gray;'>
+        Instantly compares component specifications across your company's PDF documents. 
+        Find alternative suppliers, discover similar components, and leverage forgotten 
+        technical documentation - all in one intuitive search platform. Save time, reduce 
+        costs, and make smarter procurement decisions by transforming your scattered 
+        technical data into actionable intelligence.
+        </p>
+        """, 
+        unsafe_allow_html=True
+    )
+    header.write("""<div class='fixed-header'/>""", unsafe_allow_html=True)
 
+    # Custom CSS for the sticky header
+    st.markdown(
+        """
+        <style>
+            div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
+                position: sticky;
+                top: 0;
+                background-color: #0E1117;
+                z-index: 999;
+                padding: 10px 10px;
+                text-align: left; /* Align text to the left */
+            }
+            .fixed-header {
+                border-bottom: 1px solid #1E232B;
+            }
+            .header-title {
+                font-size: 2rem;
+                font-weight: bold;
+                color: white;
+                margin-bottom: 5px;
+            }
+
+            .header-description {
+                font-size: 1rem;
+                color: gray;
+                margin-bottom: 0;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Add note in sidebar
+    st.sidebar.markdown(
+        """
+        <p style='font-size: 14px; color: gray;'>
+        **⚠️ Note:** The text is generated using AI, please be careful in using the result 
+        that may not be accurate. 
+        </p>
+        """, 
+        unsafe_allow_html=True
+    )
 
 def load_user_db():
     """Carica il database degli utenti da un file JSON."""

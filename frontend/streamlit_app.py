@@ -22,6 +22,7 @@ from typing import Any
 import streamlit as st
 from langchain_core.messages import HumanMessage
 from streamlit_feedback import streamlit_feedback
+from PIL import Image  
 
 from frontend.side_bar import SideBar
 from frontend.style.app_markdown import MARKDOWN_STR
@@ -47,9 +48,20 @@ def setup_page() -> None:
         menu_items=None,
     )
 
-    # Crea un contenitore per il titolo e la descrizione
     header = st.container()
-    header.title("Component Compass")
+
+    col1, col2 = header.columns([8, 2]) # 80% e 20% della larghezza
+
+    with col1:
+        st.title("Component Compass")
+
+    with col2:
+        try:
+            logo = Image.open("frontend/logo.png")
+            st.image(logo, width=150)
+        except FileNotFoundError:
+            st.error("The file logo.png was not found in the same folder as the script.")
+
     header.markdown(
         """
         <p style='font-size: 18px; color: gray;'>
@@ -74,7 +86,7 @@ def setup_page() -> None:
                 background-color: #0E1117;
                 z-index: 999;
                 padding: 10px 10px;
-                text-align: left; /* Align text to the left */
+                text-align: left;
             }
             .fixed-header {
                 border-bottom: 1px solid #1E232B;

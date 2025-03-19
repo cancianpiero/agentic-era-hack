@@ -154,7 +154,8 @@ def login_form() -> bool:
         if user_type:
             st.session_state["authenticated"] = True
             st.success("Login successful!")
-            st.session_state["user_type"] = user_type  # Salva il tipo di utente nella sessione
+            os.environ['USER_TYPE'] = user_type
+            st.rerun()
             return True
         else:
             st.error("Incorrect username or password. Please try again.")
@@ -286,7 +287,7 @@ def handle_user_input(side_bar: SideBar) -> None:
             gcs_uris=side_bar.gcs_uris,
         )
         st.session_state["gcs_uris_to_be_sent"] = ""
-        parts.append({"type": "text", "text": prompt, "user_type": st.session_state["user_type"]})
+        parts.append({"type": "text", "text": prompt, "user_type": os.getenv('USER_TYPE')})
         st.session_state.user_chats[st.session_state["session_id"]]["messages"].append(
             HumanMessage(content=parts).model_dump()
         )

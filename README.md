@@ -1,4 +1,4 @@
-# my-agent-name2
+# Component Compass
 
 A agent implementing a base ReAct agent using LangGraph
 
